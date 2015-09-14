@@ -1,0 +1,1294 @@
+
+<html>
+<title>TileGrind</title>
+<style type="text/css">
+* {
+    -webkit-user-select: none; 
+}
+body {
+    font-family: helvetica;
+}
+canvas {
+    border: solid 2px #CCC;
+    cursor:crosshair;
+}
+pre {
+    font-size: x-small;
+    border: solid 2px #CCC;
+    padding:4px;
+}
+div.map {
+    max-height: 720px;
+    overflow: scroll;
+}
+div.map {
+    max-height: 720px;
+    overflow: scroll;
+}
+div.sprite {
+    padding: 4px;
+    margin: 4px;
+    border:solid 1px #CCC;
+}
+span {
+    border: 1px solid #444;
+    background-color: #CCC;
+}
+
+#info {
+    display: inline-block;
+    min-width: 80px;
+}
+
+</style>
+<body>
+
+<div id="fileInput">
+<input type="file" id="files" name="files[]" multiple />
+</div>
+
+<input type="text" id="savename" value="tiles.h"/>
+<input type="button" id="saveas" value="Save"/>
+<input type="button" id="findunused" value="Find Unused"/>
+<input type="button" id="newsprite" value="New Sprite"/>
+<input type="checkbox" id="raw">Raw</input>
+<input type="checkbox" id="palette_phase">Palette</input>
+<span> Rows: <input type="number" id="rows" min="8" value="24" max="128"/></span>
+<b id="info"></b>
+
+
+<table>
+    <tr>
+        <td valign="top">
+            <div class='map'>
+                <canvas id='map'width='640' height='384'></canvas>
+            </div>
+            <div id='importer' class='map'>
+                <canvas id='importer_canvas'width='640' height='384'></canvas>
+            </div>
+        </td>
+        <td valign="top">
+            <canvas id='editor' width='256' height='256'></canvas>
+            <br/>
+            <canvas id='palette' width='256' height='16'></canvas>
+            <br/>
+            <canvas id='tilemap' width='256' height='256'></canvas>
+        </td>
+        <td valign="top">
+            <div class='map' id='spritecontainer'>
+            </div>
+        </td>
+    </tr>
+</table>
+<pre id='log'></pre>
+<script>
+
+ var MAP_WIDTH = 40;
+ var MAP_HEIGHT = 24;
+
+var _map_canvas = document.getElementById('map');
+var _editor_canvas = document.getElementById('editor');
+var _palette_canvas = document.getElementById('palette');
+var _tilemap_canvas = document.getElementById('tilemap');
+var _sprite_canvas = document.getElementById('sprite');
+var _saveas = document.getElementById('saveas');
+var _import = document.getElementById('import');
+var _spritecontainer = document.getElementById('spritecontainer');
+var _importer_canvas = document.getElementById('importer_canvas');
+
+var _map_ctx = _map_canvas.getContext('2d');
+var _editor_ctx = _editor_canvas.getContext('2d');
+var _palette_ctx = _palette_canvas.getContext('2d');
+var _tilemap_ctx = _tilemap_canvas.getContext('2d');
+//var _sprite_ctx = _sprite_canvas.getContext('2d');
+
+var _tiles = [];    // 8x8 tile data 16*256 tile data
+var _map = [];      // 40*24 map
+var _current_color = 15;
+var _current_tile = 2;
+var _sprites = [];
+
+var _fileName = "tiles.h";
+var _drawRaw = false;
+
+//2 sets of colors 1.5
+
+var _colors1_0 = [
+"#0F0F0F",
+"#AE3E00",
+"#209000",
+"#C2C500",
+"#076FBD",
+"#939393",
+"#17FB6B",
+"#B7FF52",
+"#8F1FF7",
+"#FF4FDD",
+"#A3A3A3",
+"#FFD889",
+"#8481FF",
+"#FFB6FF",
+"#98FFFF",
+"#FFFFFF",
+];
+
+var _colorsRGB1_0 = [
+0x0F0F0F,
+0xAE3E00,
+0x209000,
+0xC2C500,
+0x076FBD,
+0x939393,
+0x17FB6B,
+0xB7FF52,
+0x8F1FF7,
+0xFF4FDD,
+0xA3A3A3,
+0xFFD889,
+0x8481FF,
+0xFFB6FF,
+0x98FFFF,
+0xFFFFFF,
+];
+
+var _colors1_5 = [
+"#0F0F0F",
+"#BD1E7C",
+"#6A6D00",
+"#FF7E17",
+"#009131",
+"#939393",
+"#51FA00",
+"#FFFF39",
+"#423FFF",
+"#F850FF",
+"#A3A3A3",
+"#FFB5FF",
+"#2AC8FF",
+"#DDDAFF",
+"#89FFCA",
+"#FFFFFF",
+];
+
+var _colorsRGB1_5 = [
+0x0F0F0F,
+0xBD1E7C,
+0x6A6D00,
+0xFF7E17,
+0x009131,
+0x939393,
+0x51FA00,
+0xFFFF39,
+0x423FFF,
+0xF850FF,
+0xA3A3A3,
+0xFFB5FF,
+0x2AC8FF,
+0xDDDAFF,
+0x89FFCA,
+0xFFFFFF,
+];
+
+var _colors = _colors1_0;
+var _colorsRGB = _colorsRGB1_0;
+
+function toggle_palette()
+{
+    if (_colors == _colors1_0)
+    {
+        _colors = _colors1_5;
+        _colorsRGB = _colorsRGB1_5;
+    } else {
+        _colors = _colors1_0;
+        _colorsRGB = _colorsRGB1_0;
+    }
+}
+// template
+function t(s,d)
+{
+ for(var p in d)
+   s=s.replace(new RegExp('{'+p+'}','g'), d[p]);
+ return s;
+}
+
+function setInfo(s)
+{
+    document.getElementById("info").innerText = s;
+}
+
+function setMapSize(n)
+{
+    MAP_HEIGHT = n;
+    _map_canvas.height = n*8*2;
+    _map_canvas.width = MAP_WIDTH*8*2;
+    while (_map.length < MAP_WIDTH*MAP_HEIGHT)
+        _map.push(1);
+    rowsInput.value = MAP_HEIGHT;
+}
+
+var rowsInput = document.getElementById('rows');
+rowsInput.addEventListener("keydown",function(e) {
+    if( e.which == 10 || e.which == 13) {
+        var n = parseInt(e.target.value);
+        setMapSize(n);
+        drawMap(-1);
+    }
+});
+
+document.getElementById('raw').addEventListener("change",function(e) {
+    _drawRaw = ! _drawRaw;
+    refresh();
+});
+
+document.getElementById('palette_phase').addEventListener("change",function(e) {
+    toggle_palette();
+    refresh();
+});
+
+
+function drawOutline(c,x,y,scale,red)
+{
+    c.beginPath();
+    c.strokeStyle = red ? "rgba(255,0,0,1)" : "rgba(255,255,255,0.2)";
+    c.rect(x*scale+0.5,y*scale+0.5,scale-1,scale-1);
+    c.stroke();
+}
+
+function drawRect(c,color,x,y,width,height)
+{
+    c.beginPath();
+    if (color < 0)
+        c.fillStyle = "#234";
+    else
+        c.fillStyle = _colors[color];
+    c.rect(x,y,width,height);
+    c.fill();
+}
+
+function drawPix(c,color,x,y,scale,outline)
+{
+    drawRect(c,color,x*scale,y*scale,scale,scale);
+    if (outline)
+        drawOutline(c,x,y,scale);
+}
+
+function drawDot(c,x,y,scale)
+{
+    c.beginPath();
+    c.strokeStyle = "#888";
+    c.arc(x*scale,y*scale,scale,0,2 * Math.PI, false);
+    c.stroke();
+}
+
+function line(c,x0,y0,x1,y1)
+{
+    c.beginPath();
+    c.moveTo(x0,y0);
+    c.lineTo(x1,y1);
+    c.stroke();
+}
+
+function drawTile(c,index,px,py,scale,outline)
+{
+    index *= 32;
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x += 2)
+        {
+            var i = _tiles[index++];
+            if (_drawRaw) {
+                for (var h = 0; h < scale*2; h += scale/2)
+                {
+                    drawRect(c,i & 8 ? 15 : 0,(px + x)*scale+h,(py + y)*scale,scale/2,scale);
+                    i <<= 1;
+                }
+            }
+            else
+            {
+                drawPix(c,i,px + x, py + y,scale,outline);   // 2x1
+                drawPix(c,i,px + x+1, py + y,scale,outline);
+            }
+        }
+    }
+    if (index == 32)
+        drawDot(c,px+4,py+4,scale);
+}
+
+function init()
+{
+    for (var i = 0; i < 256*32; i++)    // 8k max?
+        _tiles[i] = 0;
+    for (var i = 2*32; i < 3*32; i++)   
+        _tiles[i] = 0xF;    // white default tile at 2
+    for (var i = 0; i < MAP_WIDTH*MAP_HEIGHT; i++)    // 
+        _map[i] = 1;    // 0 is special
+}
+
+function drawPalette()
+{
+    for (var i = 0; i < 16; i++)
+        drawPix(_palette_ctx,i,i,0,16);
+    drawOutline(_palette_ctx,_current_color,0,16,true);
+}
+
+function mapClick(o,a,dx,dy)
+{
+    if (!dy)
+        dy = dx;
+    var cols = Math.floor(o.width/dx);
+    var rows = Math.floor(o.height/dy);
+    var x = Math.floor(a.offsetX/dx);
+    var y = Math.floor(a.offsetY/dy);
+    x = Math.min(Math.max(0,x),cols-1);
+    y = Math.min(Math.max(0,y),rows-1);
+    return x + y*cols;
+}
+
+function drawColor2x2(color,data,dst,rowBytes)
+{
+    var rgb = _colorsRGB[color];
+    for (var py = 0; py < 2; py++)
+    {
+        var d = dst;
+        if (_drawRaw) {
+            var g;
+            g = color & 2 ? 0xFF : 0x00;
+            data[d+0] = data[d+1] = data[d+2] = g;
+            g = color & 1 ? 0xFF : 0x00;
+            data[d+4] = data[d+5] = data[d+6] = g;
+            data[d+3] = data[d+7] = 0xFF;
+        } else {
+            data[d+0] = data[d+4] = (rgb >> 16) & 0xFF;
+            data[d+1] = data[d+5] = (rgb >> 8) & 0xFF;
+            data[d+2] = data[d+6] = rgb & 0xFF;
+            data[d+3] = data[d+7] = 0xFF;
+        }
+        dst += rowBytes;
+    }
+}
+
+function drawTile2x2(index,data,dst,rowBytes)
+{
+    var cy = index*32;
+    for (var y = 0; y < 8; y++) {
+        for (var x = 0; x < 8; x++) {
+            var color = _tiles[cy + (x >> 1)];
+            if (_drawRaw) {
+                if (!(x & 1))
+                    color >>= 2;
+            } else {
+                if (cy < 32)
+                    color = (x + y) & 1 ? 0x0 : 0xF;  // hard zero
+            }
+            drawColor2x2(color,data,dst + x*8,rowBytes);
+        }
+        dst += rowBytes*2;
+        cy += 4;
+    }
+}
+
+function drawMap(update)
+{
+    var data = _map_ctx.getImageData(0,0,_map_canvas.width, _map_canvas.height);
+    var dst = 0;
+    var i = 0;
+    var rowBytes = _map_canvas.width*4;
+    for (var y = 0; y < MAP_HEIGHT; y++) {
+        for (var x = 0; x < MAP_WIDTH; x++) {
+            var t = _map[i++];
+            if (t == update || update < 0)
+                drawTile2x2(t, data.data, dst + x*16*4,rowBytes);
+        }
+        dst += rowBytes*16;
+    }
+    _map_ctx.putImageData(data,0,0);
+}
+
+//================================================
+//================================================
+//  Generate tiles from an image
+
+function buildTileMap(imageData)
+{
+    var hash = {};
+    var index = 1;  // dark black
+
+    var color2index = [];
+    var index2color = [];
+
+    function insertColor(rgb)
+    {
+        if (color2index[rgb])
+            return color2index[rgb];    // index 0 not used
+        color2index[rgb] = index2color.length;
+        index2color.push(rgb);
+    }
+
+    function getTile(imageData,x,y)
+    {
+        var t = [];
+        var d = imageData.data;
+        for (var yy = 0; yy < 8; yy++) {
+            var row = ((yy+y)*imageData.width + x) << 2;
+            for (var xx = 0; xx < 8; xx += 2)
+            {
+                var r = d[row + 0];
+                var g = d[row + 1];
+                var b = d[row + 2];
+                var k = (r << 16) | (g << 8) | b;
+                t.push(insertColor(k));
+                row += 4;
+            }
+        }
+        return t;
+    }
+
+    function match(a,b)
+    {
+        var miss = 0;
+        for (var i = 0; i < 32; i++)
+            if (a[i] != b[1])
+                miss++;
+        return miss < 24;
+    }
+
+    function find(tile,csum)
+    {
+        var list = hash[csum];
+        if (!list)
+            return -1;
+        for (var i = 0; i < list.length; i++)   // find in list
+        {
+            if (match(tile,list[i].tile))
+                return list[i].hit;
+        }
+        return -1;
+    }
+
+    function insert(tile,csum)
+    {
+        if (csum == 0)
+            return 1;   // just black
+
+        var hit = find(tile,csum)
+        if (hit != -1) // Already there?
+            return hit;
+
+        hit = ++index;
+        if (!hash[csum])
+            hash[csum] = [];
+        hash[csum].push({index:hit,tile:t});   // add one
+        return hit;
+    }
+
+    insertColor(0xDEADBEEF);  // zero
+    insertColor(0x000000);  // Black
+    insertColor(0xFFFFFF);  // White
+
+    var collide = 0;
+    var indexes = [];
+    for (var y = 0; y < imageData.height; y += 8)
+    {
+        for (var x = 0; x < imageData.width; x += 8)
+        {
+            var t = getTile(imageData,x,y);
+            var sum = 0;
+            for (var i = 0; i < 32; i++)
+                sum += t[i];
+            indexes.push(insert(t,sum));
+        }
+    }
+    console.log(index + " uniques," + index2color.length + " colors");
+    console.log(hash);
+    console.log(index2color);
+}
+
+function importTiles(pngData)
+{
+    var img = new Image();
+    var ctx = _importer_canvas.getContext('2d');
+    img.onload = function() {
+        ctx.drawImage(img, 0,0,img.width,img.height,0,0,img.width*2,img.height*2);
+        _map_ctx.globalAlpha = 0.5;
+        _map_ctx.drawImage(img, 0,0,img.width,img.height,0,0,img.width*2,img.height*2);
+        _map_ctx.globalAlpha = 1;
+        //var data = ctx.getImageData(0,0,img.width,img.height);
+        //buildTileMap(data);
+    }
+    img.src = pngData;
+}
+
+function drawTiles(update)
+{
+    var i = 0;
+    for (var y = 0; y < 16; y++) {
+        for (var x = 0; x < 16; x++) {
+            if (i == update || update < 0)
+            {
+                drawTile(_tilemap_ctx,i,x*8,y*8,2);
+                drawOutline(_tilemap_ctx,x,y,16);
+            }
+            i++;
+        }
+    }
+}
+
+function drawEditor()
+{
+    drawTile(_editor_ctx,_current_tile,0,0,32,true);
+}
+
+function clear(node)
+{
+    while (node.firstChild)
+        node.removeChild(node.firstChild);
+}
+
+function initSprite (sprite) {
+    var s = sprite;
+    var scale = 8;
+
+    s.div.sprite = s;
+    s.canvas = s.div.getElementsByTagName("canvas")[0];
+    s.ctx = s.canvas.getContext("2d");
+
+    var inputs = s.div.getElementsByTagName("input");
+    s.input = inputs[4];    // name
+
+    inputs[0].onclick = function(e) // raw
+    {
+        s.raw = !s.raw;
+        s.draw();
+    }
+
+    inputs[1].onclick = function(e) // clone
+    {
+        var new_sprite = { 
+            name:s.name + "_copy",
+            row_bytes:s.row_bytes,
+            height:s.height,
+            x:s.x,
+            y:s.y,
+            data:s.data.slice(0)
+        };
+        createSprite(new_sprite,s);
+        _sprites.push(new_sprite);
+    }
+
+    inputs[2].onclick = function(e) // delete
+    {
+        if (window.confirm("Delete " + s.input.value + "?"))
+            _spritecontainer.removeChild(s.div);
+    }
+
+    inputs[3].onclick = function(e) // flip
+    {
+        var pix = [];
+        var width = measureSprite(s).row_bytes*2;
+
+        var x,y;
+        for (y = 0; y < s.height; y++)
+            for (x = 0; x < width; x++)
+                pix.push(s.getPix(width-1-x,y));
+
+        var i = 0;
+        for (y = 0; y < s.height; y++)
+            for (x = 0; x < width; x++)
+                {
+                    var c = pix[i++];
+                    s.setPix(x,y,c);
+                }
+        s.draw();
+    }
+
+    // add mouse funcs
+    mouseable(s.canvas,function(e) {
+         if (s.canvas.hovering)
+            return;
+        var x = Math.floor(e.offsetX/(scale*2));
+        var y = Math.floor(e.offsetY/scale);    // TODO. Expand
+        if (s.raw) {
+            s.setPixRaw(Math.floor(e.offsetX*2/scale),y);
+        } else {
+            s.setPix(x,y,_current_color);
+        }
+        s.draw();
+    });
+
+    s.getPix = function(x,y)
+    {
+        if (x < 0 || x >= s.row_bytes*2)
+            return -1;
+        if (y < 0 || y >= s.height)
+            return -1;
+        var i = y*s.row_bytes + (x >>1);
+        var c = s.data[i];
+        return x & 1 ? c & 0xF : c >> 4;
+    };
+
+    s.setPix = function(x,y,c)
+    {
+        if (x < 0 || x >= s.row_bytes*2)
+            return;
+        if (y < 0 || y >= s.height)
+            return;
+        var i = y*s.row_bytes + (x>>1);
+        if (x & 1)
+            c = (s.data[i] & 0xF0) | c;
+        else
+            c = (s.data[i] & 0x0F) | (c << 4);
+        s.data[i] = c;
+    }
+
+    s.setPixRaw = function(x,y)
+    {
+        if (x < 0 || x >= s.row_bytes*8)
+            return;
+        if (y < 0 || y >= s.height)
+            return;
+        var i = y*s.row_bytes + (x>>3);
+        s.data[i] ^= 0x80 >> (x & 7);
+    }
+
+    // add drawing
+    s.draw = function()
+    {
+        var width = s.canvas.width;
+        var height = s.canvas.height;
+        var i = 0;
+        for (var y = 0; y < height/8; y++) {
+            for (var x = 0; x < width/16; x++) {
+                var c = s.getPix(x,y);
+                 if (s.raw) {
+                    for (var h = 0; h < 16; h+=4)
+                    {
+                        drawRect(s.ctx,c & 0x8 ? 15 : 0,x*16+h,y*8,4,8);
+                        c <<= 1;
+                    }
+                } else {
+                    drawPix(s.ctx,c,x*2,y,8);
+                    drawPix(s.ctx,c,x*2+1,y,8);
+                }
+            }
+        }
+    }
+    s.draw();
+}
+
+// TODO: General copying. trimming etc
+// clones sprite data in process
+function setSpriteSize(s,width,height)
+{
+    var data = [];
+    var i = 0;
+    for (var y = 0; y < height; y++)
+    {
+        for (var x = 0; x < width; x += 2)
+        {
+            if (x < s.row_bytes*2 && y < s.height)
+                data.push(s.data[i++]);
+            else
+                data.push(0);
+        }
+    }
+    s.row_bytes = (width+1) >> 1;
+    s.data  = data;
+    s.height = height;
+}
+
+function insertAfter(referenceNode, newNode)
+{
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+}
+
+function getSprites()
+{
+    var list = [];
+    var c = _spritecontainer.childNodes;
+    for (var i = 0; i < c.length; i++)
+        list.push(c[i].sprite);
+    return list;
+}
+
+function createSprite(s,after)
+{
+    var width = 32;
+    var height = 16;
+    setSpriteSize(s,width,height);
+    s.div = document.createElement("div");
+    s.div.innerHTML = t(_spritediv,{name:s.name,width:width*8,height:height*8});
+    if (after)
+        insertAfter(after.div,s.div);
+    else
+        _spritecontainer.appendChild(s.div);
+    initSprite(s);
+}
+
+function measureSprite(s)
+{
+    var width = 0;
+    var height = 0;
+    var i = 0;
+    for (var y = 0; y < s.height; y++)
+    {
+        for (var x = 0; x < s.row_bytes; x++)
+        {
+            if (s.data[i++])
+            {
+                width = Math.max(x,width);
+                height = y;
+            }
+        }
+    }
+    width++;
+    height++;
+    if (width & 1)
+        width++;    // Even rowbytes please
+    return {row_bytes:width,height:height};
+}
+
+// Trim sprite for export
+function pack_sprite(s)
+{
+    var m = measureSprite(s);
+    var row_bytes = m.row_bytes;
+    var height = m.height;
+
+    var cpp = t(
+        "PROGMEM\nconst uint8_t {name}[] = {\n{height},{row_bytes},{x},{y},\n",
+            { name:s.input.value,row_bytes:HEX(row_bytes),height:HEX(height),x:HEX(0),y:HEX(0)}
+        );
+    
+    var i = 0;
+    for (var y = 0; y < height; y++)
+    {
+        for (var x = 0; x < row_bytes; x++)
+            cpp += HEX(s.data[i + x]) + ",";
+        cpp += "\n";
+        i += s.row_bytes;
+    }
+    cpp += "};\n";
+    return cpp;
+}
+
+var _spritediv = 
+"<div class='sprite'>" +
+"<input type='button' value='Raw'>" + 
+"<input type='button' value='Clone'>" + 
+"<input type='button' value='Delete'>" + 
+"<input type='button' value='Flip'><br/>" + 
+"<input type='text' value='{name}'><br/>" +
+"<canvas width='{width}' height='{height}'/>"
+"</div>";
+
+function drawSprites(update)
+{
+    clear(_spritecontainer);
+    for (var i = 0; i < _sprites.length; i++)
+        createSprite(_sprites[i]);
+}
+
+function mouseable(c,actionmouse)
+{
+    c.hovering = true;
+    c.addEventListener("mousemove", actionmouse, false);
+    c.addEventListener("mousedown", function(e) {
+        c.hovering = false;
+        actionmouse(e);
+    }, false);
+    document.body.addEventListener("mouseup", function(e) {
+        c.hovering = true;
+    }, false);
+}
+
+function editmouse(e)
+{
+     if (_editor_canvas.hovering)
+        return;
+
+    var x = Math.floor(e.offsetX/16);
+    var y = Math.floor(e.offsetY/32);
+    var i = y*4+(x >> 2);
+
+    if (_drawRaw)
+        _tiles[_current_tile*4*8 + i] ^= 0x8 >> (x & 3);
+    else
+        _tiles[_current_tile*4*8 + i] = _current_color;
+
+    drawEditor();
+    drawTiles(_current_tile);
+    drawMap(_current_tile);
+}
+mouseable(_editor_canvas,editmouse);
+
+_palette_canvas.onclick = function(e)
+{
+    var c = _current_color;
+    _current_color = mapClick(_palette_canvas,e,16);
+    if (c != _current_color)
+        drawPalette();
+}
+
+// Create a new sprite
+document.getElementById('newsprite').onclick = function(e)
+{
+    var d = [];
+    for (var i = 0; i < 256; i++)
+        d[i] = 0;
+    var s = { 
+        name:"untitled",
+        row_bytes:16,
+        height:16,
+        x:16,
+        y:8,
+        data:d
+    };
+    createSprite(s);
+    _sprites.push(s);
+}
+
+// hilite unused
+document.getElementById('findunused').onclick = function(e)
+{
+    var a = [];
+    var n = _tiles.length/32;
+    for (var i = 0; i < n; i++)
+        a.push(0);
+    for (var i = 0; i < _map.length; i++)
+        a[_map[i]]++;
+
+    for (var i = 0; i < n; i++)
+    {
+        if (!a[i])
+            drawOutline(_tilemap_ctx,i & 0x0F,i >> 4,16,true);
+    }
+}
+
+function edittile(e)
+{
+    var t = mapClick(_tilemap_canvas,e,16);
+
+    if (_tilemap_canvas.hovering)
+    {
+        setInfo("Tile " + t);
+        return;
+    }
+
+    if (t != _current_tile)
+    {
+        drawMap(_current_tile);
+        _current_tile = t;
+    }
+    drawEditor();
+    //drawTile(_map_ctx,t,x*8,y*8,2);
+}
+mouseable(_tilemap_canvas,edittile);
+
+
+function mapmouse(e)
+{
+    var i = mapClick(_map_canvas,e,16);
+    var x = i % MAP_WIDTH;
+    var y = Math.floor(i/MAP_WIDTH);
+
+    if (_map_canvas.hovering)
+    {
+        setInfo("Map " + x + ":" + y);
+        return;
+    }
+
+    _map[i] = _current_tile;
+    drawTile(_map_ctx,_current_tile,x*8,y*8,2);
+}
+mouseable(_map_canvas,mapmouse);
+
+function refresh()
+{
+    drawPalette();
+    drawEditor();
+    drawMap(-1);
+    drawTiles(-1);
+    drawSprites(-1);
+}
+
+init();
+refresh();
+
+
+//===============================================================
+//===============================================================
+
+function pack(t)
+{
+    var a = [];
+    for (var i = 0; i < t.length; i += 2)
+        a.push((t[i] << 4) | t[i+1]);
+    return a;
+}
+
+function interleave(t) {
+    t = pack(t);
+    var a = [];
+    var count = t.length/16;   // number of tiles
+    var k = 0;
+    for (var i = 0; i < count; i++)
+        for (var j = 0; j < 8; j++)
+        {
+            var dst = (i + j*count)<<1;
+            a[dst] = t[k++];
+            a[dst+1] = t[k++];
+        }
+    return a;
+}
+
+// sprite format is h,rowbytes,h*rowbytes
+
+function HEX(n)
+{
+    var x = n.toString(16);
+    if (x.length == 1)
+        return "0x0"+x;
+    return "0x"+x;
+}
+
+function pack_sprites(s)
+{
+    var sprites = [];
+    var list = getSprites();
+    var mark = 0;
+    for (var i = 0; i < list.length; i++)
+    {
+        sprites.push(pack_sprite(list[i]));
+    }
+
+    sprites.push("SPRITEPTR _sprite_ptrs[] = {\n");
+    for (var i = 0; i < list.length; i++)
+    {
+        sprites.push("(SPRITEPTR)",list[i].input.value + ",\n");
+    }
+    sprites.push("};\n");
+
+    sprites.push("\nenum {\n");
+    for (var i = 0; i < list.length; i++)
+    {
+        sprites.push("S_" + list[i].input.value + ", // " + i + "\n");
+    }
+    sprites.push("};\n");
+
+    return sprites.join('');
+}
+
+function parse_sprites(blobs)
+{
+    var spritelist = [];
+    for (var n in blobs)
+    {
+        if (n == "_tiles[]" || n == "_map[]" || n == "_sprite_ptr[]")
+            continue;
+        var s = blobs[n].data;
+        for (var i = 0; i < s.length;) {
+            var height = s[i++];
+            var row_bytes = s[i++];
+            var ox = s[i++];
+            var oy = s[i++];
+            var len = height*row_bytes;
+            var sprite = {
+                name : n.substr(0,n.length-2),
+                height: height,
+                row_bytes: row_bytes,
+                x : ox,
+                y : oy,
+                data : s.slice(i,i+len)
+            }
+            spritelist.push(sprite);
+            i += len;
+        };
+    }    
+    return spritelist;
+}
+
+function deinterleave(t)
+{
+    var a = [];
+    var n;
+    var count = t.length/16;   // number of chars
+    for (var i = 0; i < count; i++)
+        for (var j = 0; j < 8; j++)
+        {
+            var src = (i + j*count)<<1;
+            n = t[src++];
+            a.push(n >> 4);
+            a.push(n & 0xF);
+            n = t[src++];
+            a.push(n >> 4);
+            a.push(n & 0xF);
+        }
+
+    while (a.length < 256*32)
+        a.push(0);  // fill out rest of tiles
+    return a;
+}
+// 
+function parse(s)
+{
+    var blobs = {};
+    var blob;
+    var line;
+    var lines = s.split('\n');
+    for (var i = 0; i < lines.length; i++)
+    {
+        line = lines[i];
+        while (line.length && line[0] == ' ' || line[0] == '\t')
+            line = line.substr(1);
+        if (!line.length)
+            continue;
+        if (blob && line[0] == '0')
+        {
+            var d = line.split(",");
+            blob.width =  d.length-1;
+            for (var j = 0; j < blob.width; j++)    // 
+                blob.data.push(parseInt(d[j].substr(2),16));
+        }
+        else if (line.indexOf("const") == 0)
+        {
+            var name = line.split(' ');
+            blob = {name:name[2],data:[]};
+            blobs[blob.name] = blob;
+        }
+        else if (line.indexOf("}") == 0)
+        {
+            blob = null;
+        }
+        else if (line.indexOf("/* json") == 0)
+        {
+            var json = '';
+            while (i < lines.length) {
+                if (lines[++i].indexOf("*/") == 0)
+                    break;
+                json += lines[i];
+            }
+            console.log(JSON.parse(json));
+        }
+    }
+
+    // unpack tiles C:C -> C
+    var t = blobs["_tiles[]"].data;    
+    if (t)
+        t = deinterleave(t);
+    var m = blobs["_map[]"].data;
+
+    s = parse_sprites(blobs);
+
+    if (t && m)
+    {
+        _tiles = t;
+        _map = m;
+        if (s)
+            _sprites = s;
+        MAP_WIDTH = blobs["_map[]"].width;
+        setMapSize(_map.length/MAP_WIDTH);
+        refresh();
+    }     
+}
+
+function toC(name,data,cols) {
+    var s = "PROGMEM\nconst uint8_t " + name + "[] = {\n";
+    for (var i = 0; i < data.length; i++)
+    {
+        var n = data[i];
+        s += HEX(n) + ",";
+        if (((i+1) % cols) == 0)
+            s += "\n";
+    }
+    s += "};\n";
+    return s;
+}
+
+// Skip training unused tiles
+function shrink(t)
+{
+    var last = 0;
+    for (var i = 0; i < t.length; i++)
+        if (t[i])
+            last = i;
+    last = (last + 31) & ~31;
+    if (last < 32)
+        last = 32;  // 
+    t.length = last;
+    return t;
+}
+
+var saveData = (function () {
+    var a = document.createElement("a");
+    document.body.appendChild(a);
+    a.style = "display: none";
+    return function (data, fileName) {
+        var blob = new Blob([data], {type: "octet/stream"}),
+            url = window.URL.createObjectURL(blob);
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    };
+}());
+
+_saveas.onclick = function() {
+
+    var t = interleave(shrink(_tiles));
+    var tileCount = t.length/16;
+    for (var i = 0;  i < _map.length; i++)
+        if (_map[i] >= tileCount)
+            _map[i] = 1;    // strip errant tiles
+    var s = '// ' + tileCount + " tiles\n";
+    s += toC("_tiles",t,16);
+    s += toC("_map",_map,MAP_WIDTH);
+    s += pack_sprites(_sprites);
+    _fileName = document.getElementById('savename').value;
+    saveData(s,_fileName);
+}
+
+
+//===============================================================================
+//===============================================================================
+
+var pre = document.getElementById('log');
+
+function dump(d,width)
+{
+    function H(n)
+    {
+        var x = n.toString(16);
+        if (x.length == 1)
+            return "0"+x;
+        return x;
+    }
+
+    if (!width)
+        width = 16;
+
+    var s = "";
+    for (var i = 0; i < d.length; i++)
+    {
+        s += " " + H(d[i]);
+        if (((i+1) % width) == 0)
+            s += "\n";
+    }
+    pre.innerHTML = s;
+}
+
+function isSpecial(file)
+{
+    if (file.name.indexOf("zaxxon") == 0)
+        return true;
+    return false;
+}
+
+function loadSpecial(file,data)
+{
+    if (file.name.indexOf("zaxxon") == 0)
+    {
+        var u8 = new Uint8Array(data);
+        console.log(u8);
+        dump(u8,32);
+    }
+}
+
+//===============================================================================
+//===============================================================================
+
+// Ugly way of clearing file input
+function clearFileInput()
+{
+    var div = document.getElementById('fileInput');
+    div.innerHTML = '<input type="file" id="files" name="files[]" multiple />';
+    document.getElementById('files').addEventListener('change', handleFileSelect, false);   // TODO Only on change
+}
+
+  function handleFileSelect(evt)
+  {
+    var files = evt.target.files; // FileList object
+    clearFileInput();
+
+    // Loop through the FileList and render image files as thumbnails.
+    for (var i = 0, f; f = files[i]; i++) {
+
+
+      // Closure to capture the file information.
+      var reader = new FileReader();
+      reader.onload = (function(theFile) {
+        console.log(theFile);
+        return function(e) {
+
+            if (isSpecial(theFile))
+                loadSpecial(theFile,e.target.result);
+            else {
+                      // Only process image files.
+                if (theFile.type.match('image.*')) {
+                    importTiles(e.target.result);
+                } else {
+                    parse(e.target.result);
+                    evt.target.files = null;
+                }
+            }
+        };
+      })(f);
+
+      // Read in the image file as a data URL.
+        if (f.type.match('image.*'))
+            reader.readAsDataURL(f);
+        else {
+            if (isSpecial(f))
+                reader.readAsArrayBuffer(f);
+            else
+                reader.readAsText(f);
+        }
+    }
+}
+
+document.getElementById('files').addEventListener('change', handleFileSelect, false);   // TODO Only on change
+
+
+var _clipboard = [];
+document.onkeydown = function(e)
+{
+    function copy()
+    {
+        _clipboard = [];
+        var n = _current_tile*32;
+        for (var i = 0; i < 32; i++)
+            _clipboard.push(_tiles[n++]);
+    }
+
+    function paste()
+    {
+        var n = _current_tile*32;
+        for (var i = 0; i < 32; i++)
+            _tiles[n++] = _clipboard[i];
+        drawEditor();
+        drawTiles(_current_tile);
+        drawMap(_current_tile);
+    }
+
+    function cut()
+    {
+        copy();
+    }
+
+    function undo()
+    {
+    }
+
+   // console.log(e);
+   if (e.metaKey) {
+        switch (e.which) {
+            case 67: copy(); break;
+            case 86: paste(); break;
+            case 88: cut(); break;
+            case 90: undo(); break;
+        }
+   }
+}
+
+</script>
+
+
+</body>

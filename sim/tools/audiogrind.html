@@ -1,0 +1,1093 @@
+<html>
+<title>Audiogrind</title>
+<style>
+body {
+	background-color:#F8F8F8;
+	font-family:"Open Sans","Helvetica Neue",Helvetica;
+}
+h1, h2, h3, h4, h5, h6 {
+	font-weight: 300;
+}
+h2 {
+	font-size: 30px;
+}
+canvas {
+	border: 1px solid #888;
+	margin: 8px;
+}
+.heading {
+	border-bottom: 1px solid #CCC;
+	margin-bottom: 16px;
+	padding-bottom: 16px;
+}
+.nav {
+	width: 160px;
+	padding-top: 60px;
+	list-style: none;
+	font-size: 13px;
+	color: #888;
+}
+.nav li {
+	padding: 4px;
+}
+.nav a {
+	text-decoration: none;
+}
+.nav a:link {
+	color: #888;
+}
+.nav a:hover {
+	color: #88F;
+}
+.nav,.panel,.pnl {
+	display: inline-block;
+	vertical-align: top;
+}
+.pnl {
+	width: 200px;
+	height: 200px;
+	padding: 24px;
+	text-align: center;
+	color: #FFFFFF;
+}
+
+/* access point info */
+#list {
+	margin-top: 16px;
+}
+.ap {
+	height: 20px;
+	width: 97%;
+	padding: 8px;
+    padding-left: 16px;
+	margin-bottom: 2px;
+	background-color: #DDD;
+}
+.ap span {
+	float: right;
+}
+.ap:hover {
+	background-color: #57c8f2;
+	color: #FFF;
+}
+.game {
+    padding: 8px;
+    background: #000;
+    color: #FFF;
+    border: 1px solid #CCC;
+}
+
+#fft {
+    cursor: crosshair;
+}
+#freq {
+    margin-top: 0px;
+    padding-top: 0px;
+    font-size: small;
+    color: #888;
+    padding-left: 8px;
+    min-height: 24px;
+}
+
+#midi {
+    font-size: x-small;
+    border: solid 1px #888;
+    overflow: scroll;
+    max-width: 1024px;
+}
+#wave {
+    border: solid 1px #888;
+    overflow: scroll;
+    max-width: 1024px;
+    cursor: crosshair;
+}
+
+.track {
+    color: #888;
+    font-size: smaller;
+    border-bottom: solid 1px #888;
+}
+.track em {
+    float: right;
+}
+.track:hover {
+    background: #f8d347;
+}
+
+.blue	{background:#57c8f2;}
+.yellow	{background:#f8d347;}
+.red	{background:#ff6c60;}
+.aqua	{background:#6ccac9;}
+.white 	{background:white;}
+.light-gray{background-color:#FBFBFB;}
+
+#overlay {
+	visibility: hidden;
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	width:100%;
+	height:100%;
+	background-color: rgba(0,0,0,0.5);
+	z-index: 1000;
+}
+#overlay div {
+	position: fixed;
+	top: 50%; 
+	left: 50%;
+	width:300px;
+	margin-top: -100px;
+	margin-left: -150px;
+	background: #57c8f2;
+	color: #FFF;
+	padding: 32px;
+	font-size: large;
+	box-shadow: 0px 0px 16px #000;
+	border-radius: 8px;
+}
+#overlay input {
+	font-size: large;
+	padding: 4px;
+	width:100%;
+}
+</style>
+
+<script>
+var _ajax = function(m,u,c,d) {
+	var x = new XMLHttpRequest;
+	x.onreadystatechange=function(){x.readyState^4||c(this)};
+	x.open(m,u);
+	if (d) {
+		x.setRequestHeader('Content-Type', 'application/json');
+		d = JSON.stringify(d);
+	}
+	x.send(d);
+};
+
+var _q = function(q) {
+	return document.querySelector(q)
+};
+
+function _t(s,d)
+{
+	for(var p in d)
+		s=s.replace(new RegExp('{{'+p+'}}','g'), d[p]);
+	return s;
+}
+
+function _m(src,dst,obj)
+{
+	src = _q(src);
+	dst = _q(dst);
+	if (src && dst)
+		dst.innerHTML = _t(src.innerText,obj);
+}
+
+function vis(e,on)
+{
+	e.style.visibility = on ? "visible" : "hidden";
+	return on;
+}
+
+function stop()
+{
+	event.preventDefault();
+	event.stopPropagation();
+}
+
+function get(url,cb,d)
+{
+	_ajax(d ? "post":"get",url,function(r) {
+		var o = JSON.parse(r.responseText);
+		cb(JSON.parse(r.responseText));
+	},d);
+}
+
+function display(url,src,dst)
+{
+	get(url,function(o) {
+		_m(src,dst,o);
+	});
+}
+
+function repeat(tmpl,list)
+{
+	var tmpl = _q(tmpl).innerText;	// 
+	var s = [];
+	for (var i in list)
+		s.push(_t(tmpl,list[i]));
+	return s.join('');
+}
+
+function overlay(ap) 
+{
+	if (ap)
+		_m("#pass_t","#pass",ap);
+	vis(_q("#overlay"),ap);
+}
+
+function download(blob, filename)
+{
+    var url = (window.URL || window.webkitURL).createObjectURL(blob);
+    var link = window.document.createElement('a');
+    link.href = url;
+    link.download = filename || 'output.wav';
+    var click = document.createEvent("Event");
+    click.initEvent("click", true, true);
+    link.dispatchEvent(click);
+}
+
+function toggle(el)
+{
+    el = _q(el);
+    el.style.display = (el.style.display != 'none' ? 'none' : '' );
+}
+
+//====================================================================================
+//====================================================================================
+// Sample player/
+
+var _audio_ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+var FFT_RATE = 44100;
+var FFT_BINS = 512;
+var SMALL_FFT = 1;
+
+if (SMALL_FFT) {
+    FFT_RATE = 60*262;
+    FFT_BINS = 128;
+}
+
+function make_midi_table()
+{
+    var a = 440;
+    var t = [];
+    for (var x = 0; x < 128; ++x)
+    {
+        var f = (a / 32) * Math.pow(2,(x - 9) / 12);
+        t.push(f);
+    }
+    return t;
+}
+
+var _midi_freq;
+function freq2Note(f)
+{
+    var d = 1000000;
+    var n = 0;
+    if (!_midi_freq)
+        _midi_freq = make_midi_table();
+    for (var i = 0; i < _midi_tables.length; i++)
+    {
+        var a = Math.abs(_midi_freq[i] - f);
+        if (a < d) {
+            d = a;
+            n = i;
+        }
+    }
+    return n;
+}
+function note2Freq(n)
+{
+    freq2Note(0);
+    return _midi_freq[n];
+}
+
+
+function loadSound(url,buffercb)
+{
+    var r = new XMLHttpRequest();
+    r.open("GET", url, true);
+    r.responseType = "arraybuffer";
+    r.onload = function() {_audio_ctx.decodeAudioData(request.response,buffercb)};
+    r.send();
+}
+
+// Play samples
+function samplePlayer(ctx) {
+	var buf = [];
+	var marks = [];
+	var kRate = 262*60;
+    var name = '';
+    var analyser;
+    var source;
+    var processor;
+    var fft = [];
+	var that = {
+		add: function(s8)
+		{
+			//if (buf.length > 30*kRate)
+			//	throw "Too many samples"
+			buf.push(s8);
+		},
+        freq: function()
+        {
+            return kRate;
+        },
+        set: function(samples,rate,n)
+        {
+            that.reset();
+            buf = samples;
+            kRate = rate;
+            name = n;
+        },
+        onended: null,
+        source_onended: function()
+        {
+            console.log("got onended");
+            source.stop();
+            processor.disconnect();
+            if (that.onended)
+                that.onended();
+        },
+        onaudioprocess: function(e)
+        {
+            if (!source)
+                return;
+            var array = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(array);
+            fft.push(array);
+        },
+		play: function()
+		{
+			var buffer = ctx.createBuffer(1,buf.length,kRate);
+			var data = buffer.getChannelData(0);
+   			for (var i = 0; i < buf.length; i++)
+   				data[i] = buf[i]/127;
+
+            // audio source is our buffers of 8 bit etc
+   			source = ctx.createBufferSource();
+  			source.buffer = buffer;
+  			source.connect(ctx.destination);
+            source.onended = that.source_onended;
+
+            // processor for gettint fft chunks
+            processor = ctx.createScriptProcessor(FFT_BINS*2, 1, 1);
+            processor.connect(ctx.destination);
+            processor.onaudioprocess = that.onaudioprocess;
+
+            // analyser for fft
+            analyser = ctx.createAnalyser();
+            analyser.smoothingTimeConstant = 0;
+            analyser.fftSize = FFT_BINS;
+            source.connect(analyser);
+            analyser.connect(processor);
+
+	  		source.start();
+		},
+		reset: function(n)
+		{
+			buf = [];
+			marks = [];
+            fft = [];
+            name = n;
+            kRate = 60*262;
+		},
+		samples: function()
+		{
+			return buf
+		},
+		mark: function(n)
+		{
+			marks[buf.length] = n;
+		},
+		getMarks: function()
+		{
+			return marks;
+		},
+        getName : function()
+        {
+            return name;
+        },
+        getFFT : function()
+        {
+            return fft;
+        },
+        encodeWAV: function()
+        {
+            var channels = 1;
+            var rate = 262*60;
+            var b = new Uint8Array(44+buf.length);
+            function str(p,s)
+            {
+                for (var i = 0; i < s.length; i++)
+                    b[p++] = s.charCodeAt(i);
+            }
+            function u16(p,n)
+            {
+                b[p++] = n;
+                b[p++] = n>>8;
+            }
+            function u32(p,n)
+            {
+                b[p++] = n;
+                b[p++] = n>>8;
+                b[p++] = n>>16;
+                b[p++] = n>>24;
+            }
+
+            str(0, 'RIFF');
+            u32(4, 36 + buf.length);
+            str(8, 'WAVEfmt ');
+            u32(16, 16);        // fmt len
+            u16(20, 1);         // raw
+            u16(22, channels);
+            u32(24, rate);
+            u32(28, rate*channels);
+            u16(32, channels);
+            u16(34, 8);         // 8 bit pcm
+            str(36, 'data');
+            u32(40, buf.length);
+
+            for (var i = 0; i < buf.length; i++)
+                b[44+i] = 128-buf[i];
+            return b;
+        }
+	}
+	return that;
+}
+
+// draw samples
+function render(player) {
+	var zoom,overview,fft;
+    var rate = FFT_RATE;
+	var that = {
+		init: function(z,o,f)
+		{
+			zoom = z;
+			overview = o;
+            fft = f;
+			overview.onmousemove = function(e)
+			{
+				var buf = player.samples();
+				var x = e.offsetX*buf.length/overview.width;
+				x -= zoom.width/2;
+				that.render(buf,zoom,Math.floor(x));	// move overview
+			}
+            overview.onclick = function(e)
+            {
+                var blob = new Blob([player.encodeWAV()], {type: 'application/octet-binary'}); // pass a useful mime type here
+                var n = player.getName() || "sound";
+                download(blob,n + ".wav");
+            },
+            fft.onmousemove = function(e)
+            {
+                // i * Fs / N;
+                var y = fft.height-e.offsetY;
+                if (y < 0)
+                    return;
+                var freq = (y+1)*player.freq()/(fft.height*4);  // number of bins
+                _q("#freq").innerText = Math.floor(freq) + "hz (" + freq2Note(freq) + ")";
+            }
+		},
+		render: function(buf,canvas,offset,fit)
+		{
+			offset = offset || 0;
+			fit = fit || 0;
+
+			var width = canvas.width;
+			var height = canvas.height;
+			var ctx = canvas.getContext('2d');
+
+			function get(i)
+			{
+				if (i < 0 || i >= buf.length)
+					return -1;
+				return height/2 + buf[i]*height/(127*2);
+			}
+
+			var step = 1;
+			if (fit)
+				step = width/buf.length
+
+	    	ctx.fillStyle = "#000";
+	    	ctx.fillRect (0,0,width,height);
+	    	ctx.fillStyle = "#FFF";
+	    	var j = offset;
+			for (var x = 0; x < width; x += step) {
+				var y = get(j++,height);
+				ctx.fillRect(x,y,1,1);
+			}
+
+	    	ctx.fillStyle = "rgba(255,0,0,0.75)";
+			var marks = player.getMarks();
+			for (var x in marks)
+			{
+				x -= offset;
+				ctx.fillRect(x*step,0,1,height);
+			}
+
+            // draw cells
+            if (step == 1) {
+                ctx.fillStyle = "rgba(0,0,255,0.50)";
+                var cell = Math.floor(player.freq()/60);
+                for (var x = 0; x < width; x++) {
+                    if (((x + offset) % cell) == 0)
+                        ctx.fillRect(x,0,1,height);
+                }
+            }
+
+		},
+
+        // SMALL_FFT works well with small FFT_BINS:128
+        makeBins: function(buf,freq)
+        {
+            var width = FFT_BINS*2;
+            var f = new FFT(width,freq); // 
+            var data = new Float32Array(width);
+            var step = 32;
+            var src = 0;
+
+            var fft = [];
+            while ((src + width) < buf.length)
+            {
+                for (var i = 0; i < width; i++)
+                    data[i] = buf[src+i];
+                f.forward(data);
+
+                var bin = new Uint8Array(FFT_BINS);
+                for (var i = 0; i < FFT_BINS; i++)
+                    bin[i] = Math.min(255,f.spectrum[i]*16);
+                fft.push(bin);
+                src += step;
+            }
+            return fft;
+        },
+
+        // Draw a nice FFT of a sample
+        renderfft: function(canvas,fft)
+        {
+            var width = fft.length;
+            var height = width ? fft[0].length/2 : 0;
+            if (width == 0 && height == 0)
+                return;
+            if (width > 0x3FFF)
+                width = 0x3FFF; // CANVAS MAX WIDTH TODO 32768 really
+            var tmp = document.createElement('canvas');
+            tmp.width = width;
+            tmp.height = height;
+            var ctx = tmp.getContext('2d');
+            var id = ctx.createImageData(width,height);
+            var d  = id.data;                        // only do this once per page
+
+            for (var x = 0; x < width; x++) {
+                var n = 4*x;
+                var mx = 0;
+
+                for (var y = 1; y < height; y++)
+                    mx = Math.max(mx,fft[x][height-y]); // hilite max with white
+                //mx = 255;
+                if (mx < 3)
+                    mx = 255;
+
+                for (var y = 0; y < height; y++) {
+                    var c = fft[x][height-y];
+                    if (mx && c == mx)
+                    {
+                        d[n+0] = 0xFF;  // Peak (max)
+                        d[n+1] = 0xFF;
+                        d[n+2] = 0xFF;
+                    } else {
+                        d[n+0] = 255-c;      // r
+                        d[n+1] = c;  // g
+                        d[n+2] = 0;      // b
+                    }
+                    d[n+3] = 0xFF; // a
+                    n += width*4;
+                }
+            }
+            ctx.putImageData(id,0,0);
+            canvas.getContext('2d').drawImage(tmp,0,0,canvas.width,canvas.height);
+        },
+        drawfft: function()
+        {
+            var samples = player.samples();
+            var bins = player.getFFT();
+            if (SMALL_FFT)
+                bins = that.makeBins(samples,player.freq());
+            that.renderfft(fft,bins);
+        },
+		draw: function() {
+            var samples = player.samples();
+			that.render(samples,zoom);
+			that.render(samples,overview,0,1);
+            if (SMALL_FFT)
+                that.drawfft();
+            else
+                player.onended = that.drawfft();
+		},
+	}
+	return that;
+}
+
+var _player = new samplePlayer(_audio_ctx);
+var _render = new render(_player);
+
+function grind_init()
+{
+	audio_init();
+	_render.init(_q("#zoom"),_q("#overview"),_q("#fft"));
+}
+
+function playticks(kernel,name)
+{
+	_player.reset(name);
+	for (;;) {
+		if (!kernel(_player))
+			break;
+		for (var i = 0; i < 262; i++) {
+			_player.add(AUDIO_STEP());
+		}
+	}
+	_player.play();
+	_render.draw();
+}
+
+//====================================================================================
+//====================================================================================
+
+function playone(list,name)
+{
+	var i = 0;
+	playticks(function(player) {
+		while (!music_playing()) {
+			if (i == list.length)
+				return false;
+			player.mark();
+			music_play(list[i++]);
+		}
+		music_kernel();
+		return true;
+	},name);
+}
+
+
+var _games = [];
+var _nameMap = [];
+function play(name)
+{
+    playone(_nameMap[name],name);
+}
+
+function add_music(name,list)
+{
+    _games.push({name:name,list:list})
+}
+
+//====================================================================================
+//====================================================================================
+//  midi
+//  16 channnel per port
+
+function DrawMidi(canvas,events)
+{
+    var ctx = canvas.getContext('2d');
+    var colors = [
+            "aliceblue",
+            "#2ecc71",
+            "aqua",
+            "aquamarine",
+
+            "azure",
+            "beige",
+            "bisque",
+            "#1abc9c",
+
+            "blanchedalmond",
+            "#d35400",
+            "blueviolet",
+            "brown",
+
+            "burlywood",
+            "cadetblue",
+            "chartreuse",
+            "chocolate",
+    ];
+
+    var that = {
+        refresh: function(hilited)
+        {
+            var width = canvas.width;
+            var height = canvas.height;
+            var yscale = 3;
+            var xscale = 1; // 60 pixels/tick
+            canvas.onmousemove = function(e)
+            {
+                var n = Math.floor(128-e.offsetY/yscale);
+                _q("#freq").innerText = Math.floor(note2Freq(n)) + "hz (" + n + ")";
+            }
+
+            ctx.fillStyle = "#000";
+            ctx.fillRect (0,0,width,height);
+
+            ctx.fillStyle = "#444";
+            for (var y = 0; y < 128; y++) {
+                if (((128-y) % 12) == 0)
+                    ctx.fillStyle = "#888";
+                else
+                    ctx.fillStyle = "#444";
+                ctx.fillRect (0,y*yscale + (yscale >> 1),width,1);
+            }
+
+            ctx.fillStyle = "#111";
+            for (var x = 0; x < width; x += 60)
+                ctx.fillRect(x,0,1,height);
+
+            function drawch(start,end,n,ch,track)
+            {
+                var x0 = start;
+                var x1 = end;
+                if (x0 > canvas.width)
+                    return;
+                var y = (128-n)*yscale; // note
+
+                if (track == hilited)
+                    ctx.fillStyle = "#F00";      // hilite red
+                else
+                    ctx.fillStyle = colors[ch];  // channel
+
+                ctx.globalAlpha = (track == hilited || hilited == -1) ? 1 : 0.5;
+                ctx.fillRect(x0,y,x1-x0,yscale);
+                ctx.globalAlpha = 1;
+            }
+
+            // indicate number of used channels
+            function drawCount(ch,start,end)
+            {
+                var n = 0;
+                for (var i = 0; i < 16; i++)
+                    if ((1 << i) & ch)
+                        n++;
+                ctx.fillStyle = n > 4 ? "#F00" : "#CCC"; 
+                ctx.fillRect(start,0,end-start,n*yscale);
+            }
+
+            var channels = 0;
+            var last = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+            var note = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+            var lastt = 0;
+            function draw(e)
+            {
+                if (e.data)
+                    return;
+                var t = e.t60;
+
+                if (lastt < t) {
+                    drawCount(channels,lastt,t);
+                    lastt = t;
+                }
+                
+                var cmd = e.evt >> 4;
+                var ch = e.evt & 0xF;
+                var m = 1 << ch;
+                switch (cmd) {
+                    case 8: // note off
+                        if (m & channels)
+                            drawch(last[ch],t,note[ch],ch,e.track);
+                        channels &= ~m;
+                        break;
+                    case 9: //  note on
+                        if (m & channels)
+                            drawch(last[ch],t,note[ch],ch,e.track);
+                        channels |= m;
+                        break;
+                }
+                last[ch] = t;
+                note[ch] = e.p0;
+            }
+
+
+            for (var t in events)
+            {
+                var et = events[t];
+                for (var i in et)
+                    draw(et[i]);
+            }
+        },
+        tracking: function(index)
+        {
+            that.refresh(index);
+        }
+    }
+    return that;
+}
+var _dm;
+function tracking(t)
+{
+    if (_dm) _dm.tracking(t);
+}
+
+function drawTracks(tracks)
+{
+    _q("#tracks").innerHTML = repeat("#track_t",tracks);
+}
+
+function onmidi(file,data)
+{
+    function toAscii(d)
+    {
+        var str = '';
+        for (var i = 0; i < d.length; i++)
+            str += String.fromCharCode(d[i]);
+        return str;
+    }
+
+    var m = _q("#midi");
+    var events = _midi.parse(data);
+
+    var source = events.str;
+    delete events.str;
+    var raw = eval("[" + source + "]");
+    _q("#source").innerHTML = "<pre>"+"// " + raw.length + " bytes\n" + source+"</pre>";
+
+    var a = [];
+    var tracks = {};
+    for (var t in events) {
+        var et = events[t];
+        for (var i in et)
+        {
+            var e = et[i];
+            var track = tracks[e.track];
+            if (!track)
+                track = tracks[e.track] = { index:e.track,notes:0,text:'',instrument:[] ,name:'' ,lyrics:'' };
+            if (e.data) {
+                var s = toAscii(e.data);
+                switch (e.meta) {
+                    case 1: track.text += s;         break;
+                    case 2: track.copyright += s;    break;
+                    case 3: track.name += s;         break;
+                    case 4: track.instrument.push(s);   break;
+                    case 5: track.lyrics += s;       break;
+                }
+            } else {
+                var c = e.evt & 0xF;
+                var cmd = e.evt >> 4;
+                switch (cmd) {
+                    case 0x9:
+                        track.notes++;
+                        break;
+                    case 0xC: 
+                        track.instrument.push(_midi.program(e.p0));
+                        break;
+                }
+            }
+            a.push(_midi.format(e));
+        }
+    }
+
+    // play it
+    playone([raw],file.name);
+
+    // 5 min max
+    _q("#midi_canvas").innerHTML = "<canvas id='midi_pixels' width='18000' height='384'/>";
+    _dm = new DrawMidi(_q("#midi_pixels"),events);
+    _dm.refresh();
+    drawTracks(tracks);
+}
+
+//====================================================================================
+//====================================================================================
+
+function waveform_init(canvas)
+{
+    var count = _wave_tables.length >> 8;
+    canvas.width = count << 8;
+    var ctx = canvas.getContext("2d");
+
+    for (var i = 0; i < count; i++)
+    {
+        ctx.fillStyle = (i & 1) ? "#111" : "#222";
+        ctx.fillRect (256*i,0,256,256);
+    }
+
+    ctx.fillStyle = "#FFF";
+    for (var i = 0; i < 256*count; i++) {
+        ctx.fillRect (i,127-_wave_tables[i],1,1);
+    }
+
+    var cell = -1;
+    function drag(e) {
+        console.log(e)
+        if (!e.which)
+            return;
+        var x = e.offsetX;
+        var y = e.offsetY;
+        if (x < cell*256 || x >= (cell+1)*256)
+            return;
+
+        _wave_tables[x] = y-127;
+        ctx.fillStyle = (x & 0x100) ? "#111" : "#222";
+        ctx.fillRect (x,0,1,256);
+        ctx.fillStyle = "#FFF";
+        ctx.fillRect (x,y,1,1);
+    }
+    canvas.onmousedown = function(e)
+    {
+        cell = e.offsetX >> 8;
+    }
+    canvas.onmousemove = drag;
+}
+
+//====================================================================================
+//====================================================================================
+
+function load()
+{
+	grind_init();
+
+    // Make list
+    var t = [];
+    var g = _q("#games_t").innerText;
+    for (var i in _games)
+    {
+        var game = _games[i];
+        var sounds = [];
+
+        // Calculate length of sound (Sequence: Not always accurate! Doubles repeats etc.)
+        for (var s in game.list)
+        {
+            var sound = game.list[s];
+            var len = [];
+            for (var j = 0; j < sound.list.length; j++)
+            {
+                var blob = sound.list[j];
+                if (blob.data)
+                    len.push(blob.data.length - blob.offset);
+                else
+                    len.push(blob.length);
+            }
+            var n = {name:sound.name,len:len.join('+')}
+            sounds.push(n);
+        }
+
+        var list = repeat("#list_t",sounds);
+        var one = _t(g,{list:list,name:game.name});
+        t.push(one);
+
+        for (var n in game.list)
+            _nameMap[game.list[n].name] = game.list[n].list;
+    }
+    _q("#games").innerHTML = t.join('');
+
+    // draggable data
+    drop_init(_q("body"),function(file,data) {
+        if (file.type.indexOf("audio") == 0)
+        {
+            if (file.type == "audio/midi") {
+                onmidi(file,data);
+                return;
+            }
+
+            // Show fft of decoder
+            _audio_ctx.decodeAudioData(data,function(buffer){
+                var d = buffer.getChannelData(0);
+                var buf = new Int8Array(d.length);
+                for (var i = 0; i < d.length; i++)
+                    buf[i] = 127*d[i];
+                _player.set(buf,buffer.sampleRate,file.name);
+                _render.draw();
+                if (_player.onended)
+                    _player.onended();
+            });
+        }
+    });
+
+    waveform_init(_q("#wave_canvas"));
+}
+
+//====================================================================================
+//====================================================================================
+//  Drag and drop
+
+function drop_init(el,onfile)
+{
+    function handleFileSelect(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+
+        var files = evt.dataTransfer.files; // FileList object.
+        for (var i = 0, f; f = files[i]; i++) {
+            var reader = new FileReader();
+            reader.f = f;
+            reader.onload = (function(theFile) {
+                onfile(theFile.target.f,theFile.target.result);
+            });
+            reader.readAsArrayBuffer(f);
+        }
+    }
+
+    function handleDragOver(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+    }
+
+    el.addEventListener('dragover', handleDragOver, false);
+    el.addEventListener('drop', handleFileSelect, false);
+}
+
+//====================================================================================
+//====================================================================================
+
+</script>
+
+<script id="info_t" type="text/template">
+	<div class='pnl blue'><h2>Wifi <b>{{ssid}}</b></h2></div>
+	<div class='pnl yellow'><h2>Network <b>{{ip}}</b></h2></div>
+	<div class='pnl red'><h2>GPIO <b>{{gpio}}</b></h2></div>
+	<div class='pnl aqua'><h2>ADC <b>{{adc}}</b></h2></div>
+</script>
+
+<script id="list_t" type="text/template">
+    <div class='ap' onclick='play("{{name}}")'><b>{{name}}</b><span>{{len}}</span></div>
+</script>
+
+<script id="games_t" type="text/template">
+    <div>
+        <div class='game'>{{name}}</div>
+        <div>{{list}}</div>
+    </div>
+</script>
+
+<script id="track_t" type="text/template">
+    <div class='track' onmouseover='tracking({{index}})'>
+        <em>{{notes}}</em>
+        <b>Track {{index}} {{name}}</b><br/>
+        <i>{{instrument}}</i>
+    </div>
+</script>
+
+<body>
+<div id="overlay" onclick="overlay()">
+	<div onclick='stop()'>
+		<span id="pass"></span>
+	</div>
+</div>
+
+<ul class="nav">
+	<li><a href="#wave" onclick='toggle("#wave")'>Waveforms</a></li>
+    <li><a href="#midi" onclick='toggle("#midi")'>Midi</a></li>
+    <li><a href="#source" onclick='toggle("#source")'>Souce</a></li>
+</ul>
+<div class="panel">
+	<h1 class='heading'>Audiogrind</h1>
+	<div id="info"><canvas id="zoom" width="1024" height="256"/></div>
+    <div id="info"><canvas id="overview" width="1024" height="64"/></div>
+    <div id="info"><canvas id="fft" width="1024" height="128"/></div>
+    <div id="freq"></div>
+    <div id="wave"><canvas id="wave_canvas" width="1792" height="256"/></div>
+    <div id="midi"><div id="midi_canvas"></div></div>
+    <div id="tracks" onmouseout='tracking(-1)'></div>
+    <div id="source"></div>
+	<div id="games"></div>
+</div>
+<script src="music.js"></script>
+<script src="midi.js"></script>
+<script src="fft.js"></script>
+<script src="invaders.js"></script>
+<script src="pacman_music.js"></script>
+<script src="joust_music.js"></script>
+<script src="ballblazer_music.js"></script>
+<script>load()</script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0ED46C841BA0857400014428 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0ED46C831BA0857400014428 /* main.cpp */; };
+		0ED46C8C1BA0867500014428 /* SDLMain.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ED46C8B1BA0867500014428 /* SDLMain.m */; };
+		0ED46C8E1BA0872A00014428 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0ED46C8D1BA0872A00014428 /* SDL.framework */; };
+		0ED46C901BA0873500014428 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0ED46C8F1BA0873500014428 /* Cocoa.framework */; };
+		0ED46CA01BA0896200014428 /* sprites.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0ED46C971BA0896200014428 /* sprites.cpp */; };
+		0ED46CA11BA0896200014428 /* music.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0ED46C991BA0896200014428 /* music.cpp */; };
+		0ED46CA21BA0896200014428 /* arduinocade.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0ED46C9C1BA0896200014428 /* arduinocade.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0ED46C7E1BA0857400014428 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0E85CDF11BA6512F008405FD /* video.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = video.h; path = ../../../Arduinocade/video.h; sourceTree = "<group>"; };
+		0ED46C801BA0857400014428 /* macos_sim */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = macos_sim; sourceTree = BUILT_PRODUCTS_DIR; };
+		0ED46C831BA0857400014428 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		0ED46C8A1BA0867500014428 /* SDLMain.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SDLMain.h; sourceTree = "<group>"; };
+		0ED46C8B1BA0867500014428 /* SDLMain.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SDLMain.m; sourceTree = "<group>"; };
+		0ED46C8D1BA0872A00014428 /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = ../../../../../../../../Library/Frameworks/SDL.framework; sourceTree = "<group>"; };
+		0ED46C8F1BA0873500014428 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		0ED46C961BA0896200014428 /* sprites.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sprites.h; path = ../../sprites.h; sourceTree = "<group>"; };
+		0ED46C971BA0896200014428 /* sprites.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = sprites.cpp; path = ../../sprites.cpp; sourceTree = "<group>"; };
+		0ED46C981BA0896200014428 /* music.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = music.h; path = ../../music.h; sourceTree = "<group>"; };
+		0ED46C991BA0896200014428 /* music.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = music.cpp; path = ../../music.cpp; sourceTree = "<group>"; };
+		0ED46C9A1BA0896200014428 /* music_tables.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = music_tables.h; path = ../../music_tables.h; sourceTree = "<group>"; };
+		0ED46C9B1BA0896200014428 /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = config.h; path = ../../config.h; sourceTree = "<group>"; };
+		0ED46C9C1BA0896200014428 /* arduinocade.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = arduinocade.cpp; path = ../../arduinocade.cpp; sourceTree = "<group>"; };
+		0ED46CA41BA0A84A00014428 /* pacman.ino */ = {isa = PBXFileReference; lastKnownFileType = text; name = pacman.ino; path = ../../examples/pacman/pacman.ino; sourceTree = "<group>"; };
+		0ED46CA51BA0A85800014428 /* jowst.ino */ = {isa = PBXFileReference; lastKnownFileType = text; name = jowst.ino; path = ../../examples/jowst/jowst.ino; sourceTree = "<group>"; };
+		0ED46CA61BA0A85F00014428 /* ballblaster.ino */ = {isa = PBXFileReference; lastKnownFileType = text; name = ballblaster.ino; path = ../../examples/ballblaster/ballblaster.ino; sourceTree = "<group>"; };
+		0ED46CA71BA0A86600014428 /* titan.ino */ = {isa = PBXFileReference; lastKnownFileType = text; name = titan.ino; path = ../../examples/titan/titan.ino; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0ED46C7D1BA0857400014428 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0ED46C901BA0873500014428 /* Cocoa.framework in Frameworks */,
+				0ED46C8E1BA0872A00014428 /* SDL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0ED46C771BA0857400014428 = {
+			isa = PBXGroup;
+			children = (
+				0ED46CA31BA0896D00014428 /* arduinocade */,
+				0ED46C8F1BA0873500014428 /* Cocoa.framework */,
+				0ED46C8D1BA0872A00014428 /* SDL.framework */,
+				0ED46C821BA0857400014428 /* macos_sim */,
+				0ED46C811BA0857400014428 /* Products */,
+				0ED46CA41BA0A84A00014428 /* pacman.ino */,
+				0ED46CA51BA0A85800014428 /* jowst.ino */,
+				0ED46CA61BA0A85F00014428 /* ballblaster.ino */,
+				0ED46CA71BA0A86600014428 /* titan.ino */,
+			);
+			sourceTree = "<group>";
+		};
+		0ED46C811BA0857400014428 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0ED46C801BA0857400014428 /* macos_sim */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0ED46C821BA0857400014428 /* macos_sim */ = {
+			isa = PBXGroup;
+			children = (
+				0ED46C831BA0857400014428 /* main.cpp */,
+				0ED46C8A1BA0867500014428 /* SDLMain.h */,
+				0ED46C8B1BA0867500014428 /* SDLMain.m */,
+			);
+			path = macos_sim;
+			sourceTree = "<group>";
+		};
+		0ED46CA31BA0896D00014428 /* arduinocade */ = {
+			isa = PBXGroup;
+			children = (
+				0E85CDF11BA6512F008405FD /* video.h */,
+				0ED46C961BA0896200014428 /* sprites.h */,
+				0ED46C971BA0896200014428 /* sprites.cpp */,
+				0ED46C981BA0896200014428 /* music.h */,
+				0ED46C991BA0896200014428 /* music.cpp */,
+				0ED46C9A1BA0896200014428 /* music_tables.h */,
+				0ED46C9B1BA0896200014428 /* config.h */,
+				0ED46C9C1BA0896200014428 /* arduinocade.cpp */,
+			);
+			name = arduinocade;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0ED46C7F1BA0857400014428 /* macos_sim */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0ED46C871BA0857400014428 /* Build configuration list for PBXNativeTarget "macos_sim" */;
+			buildPhases = (
+				0ED46C7C1BA0857400014428 /* Sources */,
+				0ED46C7D1BA0857400014428 /* Frameworks */,
+				0ED46C7E1BA0857400014428 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = macos_sim;
+			productName = macos_sim;
+			productReference = 0ED46C801BA0857400014428 /* macos_sim */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0ED46C781BA0857400014428 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0620;
+				ORGANIZATIONNAME = "Peter Barrett";
+				TargetAttributes = {
+					0ED46C7F1BA0857400014428 = {
+						CreatedOnToolsVersion = 6.2;
+					};
+				};
+			};
+			buildConfigurationList = 0ED46C7B1BA0857400014428 /* Build configuration list for PBXProject "macos_sim" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 0ED46C771BA0857400014428;
+			productRefGroup = 0ED46C811BA0857400014428 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0ED46C7F1BA0857400014428 /* macos_sim */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0ED46C7C1BA0857400014428 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0ED46C8C1BA0867500014428 /* SDLMain.m in Sources */,
+				0ED46C841BA0857400014428 /* main.cpp in Sources */,
+				0ED46CA01BA0896200014428 /* sprites.cpp in Sources */,
+				0ED46CA11BA0896200014428 /* music.cpp in Sources */,
+				0ED46CA21BA0896200014428 /* arduinocade.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0ED46C851BA0857400014428 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		0ED46C861BA0857400014428 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		0ED46C881BA0857400014428 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/Library/Frameworks/SDL.framework/Headers/,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "../.. ../../examples/";
+			};
+			name = Debug;
+		};
+		0ED46C891BA0857400014428 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_ARC = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(LOCAL_LIBRARY_DIR)/Frameworks",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					/Library/Frameworks/SDL.framework/Headers/,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "../.. ../../examples/";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0ED46C7B1BA0857400014428 /* Build configuration list for PBXProject "macos_sim" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0ED46C851BA0857400014428 /* Debug */,
+				0ED46C861BA0857400014428 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0ED46C871BA0857400014428 /* Build configuration list for PBXNativeTarget "macos_sim" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0ED46C881BA0857400014428 /* Debug */,
+				0ED46C891BA0857400014428 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0ED46C781BA0857400014428 /* Project object */;
+}
