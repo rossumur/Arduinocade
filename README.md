@@ -1,7 +1,7 @@
 #Arduinocade
 Play retro color 8 bit games on your TV from an Arduino.
 
-<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/screenshots.png” width="100%"/>
+<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/screenshots.png" width="100%"/>
 
 **Arduinocade** is capable of lots of old school color 8 bit graphics (tiles, sprites, smooth scrolling, simple 3D) and sound (4 voice wavetable synthesis). All video and audio signals are generated with three resistors, an upgraded crystal and a little software. By overclocking the Arduino to 28.6363Mhz we can directly manipulate NTSC to generate 27 simultaneous onscreen colors. An IR receiver supports a wide variety of keyboards, joysticks and remote controls.
 
@@ -34,12 +34,23 @@ Build on a breadboard, modify a $2 Arduino Mini Pro or on a custom PCB.
 
 
 ```
-+----------------+
-|                |
-|    Arduino     |
-|    uno/pro     |
-|                |
-|     +28Mhz     |       5v <--+-+   IR Receiver |                |      GND <--|  )  TSOP4838 etc. |              8 |-------------+-+ |                | |              6 |----[ 100k ]--------> AUDIO |                | |              9 |----[  1k  ]----+---> VIDEO |                |                | |              1 |----[ 470  ]----+ |                | |                | +----------------+
+        +----------------+
+        |    arduino     |
+        |    uno/pro     |
+        |     28Mhz      |       5v <--+-+   IR Receiver
+        |                |      GND <--|  )  TSOP4838
+        |              8 |-------------+-+
+        |                |
+        |              6 |----[ 100k ]--------> AUDIO
+        |                |
+        |              9 |----[  1k  ]----+---> VIDEO
+        |                |                |
+        |              1 |----[ 470  ]----+
+        |                |
+        |              3 |----------------> *PS2 CLOCK
+        |              2 |----------------> *PS2 DATA
+        |                |
+        +----------------+
 ```
 
 ###Mini Pro
@@ -81,7 +92,7 @@ Every HSYNC interrupt the cpu emits a 3.57Mhz colorburst signal then sends pixel
 
 The higher layer code uses a RLE format (BallBlaster) or tiles to represent game content. Because we don’t have enough memory for a full frame buffer individual lines of tiles and sprites are composed in a loop that is in lock step with the HSYNC interrupt.
 
-<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/tilegrind.png” width="100%"/>
+<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/tilegrind.png" width="100%"/>
 
 TileGrind is a primitive html/javascript tool for generating color tiles and sprites. It can load and save C structs and understands the nature of ntsc color phase / artifacting. Its limitations vividly recreate the frustration of early graphics editing tools.
 
@@ -90,11 +101,11 @@ The Audio driver has two parts.  The low level kernel runs every HSYNC, stepping
 
 The high level task runs every frame at 60Hz and adjusts envelope, modulates frequency of the underlying channels etc. It is responsible for parsing data structures containing music tracks and sound effects, adjusting volume envelopes and frequencies, swapping wavetables for different instruments etc.
 
-<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/audiogrind.png” width="100%"/>
+<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/audiogrind.png" width="100%"/>
 
 AudioGrind is a primitive html/javascript audio editing tool is used to convert midi files to C struct data. It can also be used to reverse engineer classic gaming sound effects using a graphical spectrogram, without which it is nearly impossible to figure out how the effects are constructed - I’m talking to you Joust.
 
-IR input Joysticks, keyboards etc
+###IR input Joysticks, keyboards etc
 The GPIO attached to the IR sensor is sampled at HSYNC and fed to one of a number of IR decoders. The 15734Hz sample rate is enough to accurately parse nearly all IR protocols. For performance reasons only one is enabled at a time; check the #ifdefs in ir_input.cpp.
 
 
