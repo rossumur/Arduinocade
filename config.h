@@ -3,7 +3,7 @@
 #define __ARUINOCADE__H__
 
 // If you want to build BALLBLASTER
-//#define BALLBLASTER_GAME
+#define BALLBLASTER_GAME
 
 // PICK A CONTROLLER
 #define ATARI_FLASHBACK

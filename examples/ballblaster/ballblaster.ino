@@ -1576,6 +1576,12 @@ class BallBlaster : public Game
           if (key & DOWN) ddy = -PULSE;
           if (key & LEFT) ddx = -PULSE;
           if (key & RIGHT) ddx = PULSE;
+
+          // TOGGLE Fields rendering order on SELECT TODO
+            if (key & SELECT)
+                _odd ^= 1;
+            if (key & RESET)
+                init();
         }
         key = j[1];
         if (key) {
