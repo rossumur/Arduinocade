@@ -3,7 +3,7 @@ Play retro color 8 bit games on your TV from an Arduino.
 
 <img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/title.jpg" width="100%"/>
 
-**Arduinocade** is capable of lots of old school color 8 bit graphics (tiles, sprites, smooth scrolling, simple 3D) and sound (4 voice wavetable synthesis). All video and audio signals are generated with three resistors, an upgraded crystal and a little software. By overclocking the Arduino to 28.6363Mhz we can directly manipulate NTSC to generate 27 simultaneous onscreen colors. An IR receiver supports a wide variety of keyboards, joysticks and remote controls.
+**Arduinocade** is capable of lots of old school color 8 bit graphics (tiles, sprites, smooth scrolling, simple 3D) and sound (4 voice wavetable synthesis). All video and audio signals are generated with three resistors, an upgraded crystal and a little software. By overclocking the Arduino to 28.6363Mhz we can directly manipulate ntsc to generate 27 simultaneous onscreen colors. An IR receiver supports a wide variety of keyboards, joysticks and remote controls.
 
 ##Games
 These games are sketches of what is possible on the Arduinocade hardware and a far from the polished pieces that inspired them.
@@ -46,8 +46,8 @@ Lots of different ways to build this beastie. The design is simple enough to bui
         |                |                |
         |              1 |----[ 470  ]----+
         |                |
-        |              3 |----------------> *PS2 CLOCK
-        |              2 |----------------> *PS2 DATA
+        |              3 |
+        |              2 |
         |                |
         +----------------+
 ```
@@ -90,8 +90,8 @@ Upgrading the crystal to 28.6363Mhz allows us to run at a multiple (8x CPU clock
 Black (0000), White (1111), gray_5 (0101) and gray_10 (1010) don’t have a chroma component; the other 12 colors do. By inserting or skipping an extra nop in rendering kernel we can select between two different phases at the start of a line yielding 12+12+(black,white,gray) = 27 simultaneous colors on screen simultaneously. You can then add more by dithering etc.
 
 ###The Art of Artifacts
-<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/png" width="100%"/>
-*Left - Pixels being emitted from the TX port, Right - Colors as they appear on NTSC* 
+<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/art_of_artifacts.png" width="100%"/>
+*Left - Pixels being emitted from the TX port, Right - Colors as they appear on ntsc* 
 
 Every HSYNC interrupt the cpu emits a 3.57Mhz colorburst signal then sends pixel data from carefully timed tile or RLE video kernels. These are tricky to maintain in C, as helpful compiler optimizations often alter timing in unexpected ways. They probably all need to move to asm at some point. See note above.
 
