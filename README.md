@@ -1,13 +1,12 @@
 #Arduinocade
 Play retro color 8 bit games on your TV from an Arduino.
 
-<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/screenshots.png" width="100%"/>
+<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/title.jpg" width="100%"/>
 
 **Arduinocade** is capable of lots of old school color 8 bit graphics (tiles, sprites, smooth scrolling, simple 3D) and sound (4 voice wavetable synthesis). All video and audio signals are generated with three resistors, an upgraded crystal and a little software. By overclocking the Arduino to 28.6363Mhz we can directly manipulate NTSC to generate 27 simultaneous onscreen colors. An IR receiver supports a wide variety of keyboards, joysticks and remote controls.
 
 ##Games
 These games are sketches of what is possible on the Arduinocade hardware and a far from the polished pieces that inspired them.
-
 
 ###Ballblaster
 A one-on-one sports style game inspired by the brilliant 1984 game Ballblazer. This uses a simple physics model and a 2D/3D rendering pipeline to produce 60fps animation. Try and grab the ball and shoot it into your opponent's goal.
@@ -22,7 +21,7 @@ Fly around on ostrich thingys. Poke each other with sticks. Nice example of usin
 Homage to the Atari classic “Caverns of Mars”. Smooth scrolling, sprites and animation.
 
 ##Building the Hardware
-Build on a breadboard, modify a $2 Arduino Mini Pro or on a custom PCB. 
+Lots of different ways to build this beastie. The design is simple enough to build on a breadboard with a dip Atmega328, you might want to add a 28.6363Mhz crystal to a modify a $2 Arduino Mini Pro or use a custom PCB. 
 
 ###You will need
 + Arduino Pro Mini, Atmega328p or equivalent
@@ -31,7 +30,6 @@ Build on a breadboard, modify a $2 Arduino Mini Pro or on a custom PCB.
 + 470ohm, 1k and 100k resistors
 + IR receiver TSOP38238,TSOP4838 or equivalent (Adafruit, Mouser etc)
 + IR Input device (see below)
-
 
 
 ```
@@ -55,15 +53,17 @@ Build on a breadboard, modify a $2 Arduino Mini Pro or on a custom PCB.
 ```
 
 ###Mini Pro
-<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/arduinocade_friz_pro.png" width="100%"/>
+<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/arduinocade_fritz_pro.png" width="100%"/>
 
 We will be upgrading the crystal/resonator on these boards from 16Mhz to 28.6363Mhz. The easiest ones to modify have the big silver cans on them. Others use a ceramic resonator which require a bit of SMD fiddling.
 
 ###Custom PCB
 <img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/customboard.jpg" width="100%"/>
+If you want to get silly and build a custom board you can get a video console down to about the size of a quarter. Board and schematics can be found in `sim/docs/eagle`.
 
 ##Input Devices
 <img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/inputdevices.jpg" width="100%"/>
+*Retcon IR Controller, Atari Flashback 4 joysticks, Apple TV remote*
 
 A number of IR input devices are supported. The IR Wireless Controllers from Atari Flashback 4 work well and have that classic joystick feel, as do the Retron IR controllers. These can be readily found on eBay for a few bucks. The Apple TV remote is also supported by you might feel a little silly. Edit config.h to select your input of choice.
 
@@ -82,7 +82,7 @@ Once the modified optiboot is installed the device will behave like an Uno, so r
 
 Copy the `Arduinocade` folder into the IDE libraries folder and relaunch IDE. You should be able to open the example games from *File->Examples->Arduinocade*. Edit the config.h file to enable or disable the custom `BALLBLASTER_GAME` kernel.
 
-##How it works.
+##How it works
 
 ###Video
 Upgrading the crystal to 28.6363Mhz allows us to run at a multiple (8x CPU clock, 4x SPI output) of the ntsc subcarrier frequency. By spitting out bits in the right pattern at the right time we can generate ntsc colorburst and different colors based on the relative phase of the pattern.
@@ -90,8 +90,8 @@ Upgrading the crystal to 28.6363Mhz allows us to run at a multiple (8x CPU clock
 Black (0000), White (1111), gray_5 (0101) and gray_10 (1010) don’t have a chroma component; the other 12 colors do. By inserting or skipping an extra nop in rendering kernel we can select between two different phases at the start of a line yielding 12+12+(black,white,gray) = 27 simultaneous colors on screen simultaneously. You can then add more by dithering etc.
 
 ###The Art of Artifacts
-<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/art_of_artifacts.jpg" width="100%"/>
-*Left - Pixels being emitted from the TX port, Right - Colors as they appear on an NTSC display* 
+<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/png" width="100%"/>
+*Left - Pixels being emitted from the TX port, Right - Colors as they appear on NTSC* 
 
 Every HSYNC interrupt the cpu emits a 3.57Mhz colorburst signal then sends pixel data from carefully timed tile or RLE video kernels. These are tricky to maintain in C, as helpful compiler optimizations often alter timing in unexpected ways. They probably all need to move to asm at some point. See note above.
 
