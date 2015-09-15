@@ -33,6 +33,7 @@ Build on a breadboard, modify a $2 Arduino Mini Pro or on a custom PCB.
 + IR Input device (see below)
 
 
+
 ```
         +----------------+
         |    arduino     |
@@ -88,6 +89,10 @@ Upgrading the crystal to 28.6363Mhz allows us to run at a multiple (8x CPU clock
 
 Black (0000), White (1111), gray_5 (0101) and gray_10 (1010) don’t have a chroma component; the other 12 colors do. By inserting or skipping an extra nop in rendering kernel we can select between two different phases at the start of a line yielding 12+12+(black,white,gray) = 27 simultaneous colors on screen simultaneously. You can then add more by dithering etc.
 
+###The Art of Artifacts
+<img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/art_of_artifacts.jpg" width="100%"/>
+*Left - Pixels being emitted from the TX port, Right - Colors as they appear on an NTSC display* 
+
 Every HSYNC interrupt the cpu emits a 3.57Mhz colorburst signal then sends pixel data from carefully timed tile or RLE video kernels. These are tricky to maintain in C, as helpful compiler optimizations often alter timing in unexpected ways. They probably all need to move to asm at some point. See note above.
 
 The higher layer code uses a RLE format (BallBlaster) or tiles to represent game content. Because we don’t have enough memory for a full frame buffer individual lines of tiles and sprites are composed in a loop that is in lock step with the HSYNC interrupt.
@@ -105,12 +110,12 @@ The high level task runs every frame at 60Hz and adjusts envelope, modulates fre
 
 AudioGrind is a primitive html/javascript audio editing tool is used to convert midi files to C struct data. It can also be used to reverse engineer classic gaming sound effects using a graphical spectrogram, without which it is nearly impossible to figure out how the effects are constructed - I’m talking to you Joust.
 
-###IR input Joysticks, keyboards etc
+###IR input Joysticks, Keyboards etc
 The GPIO attached to the IR sensor is sampled at HSYNC and fed to one of a number of IR decoders. The 15734Hz sample rate is enough to accurately parse nearly all IR protocols. For performance reasons only one is enabled at a time; check the #ifdefs in ir_input.cpp.
 
+##So enjoy
 
-
-So enjoy. Let me know if you have some fun with it.
+Let me know if you have some fun with it.
 
 Cheers
 Rossum
