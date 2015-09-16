@@ -23,7 +23,7 @@ Fly around on ostrich thingys. Poke each other with sticks. Nice example of usin
 Homage to the Atari classic “Caverns of Mars”. Smooth scrolling, sprites and animation.
 
 ##Building the Hardware
-Lots of different ways to build this beastie. The design is simple enough to build on a breadboard with a dip Atmega328, you might want to add a 28.6363Mhz crystal to a modify a $2 Arduino Mini Pro or use a custom PCB. 
+Lots of different ways to build this beastie. The design is simple enough to build on a breadboard with a DIP Atmega328, alternatively you might want to add a 28.6363Mhz crystal to a $2 Arduino Pro Mini or even build on a custom PCB. 
 
 ###You will need
 + Arduino Pro Mini, Atmega328p or equivalent

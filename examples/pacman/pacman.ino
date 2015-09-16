@@ -102,6 +102,8 @@ const uint8_t _initSprites[] =
 #define DOT 17
 #define PILL 29
 
+#define HTILEOFFSET 3
+
 // TODO PROGMEM
 
 PROGMEM
@@ -137,11 +139,9 @@ public:
     byte who;
     byte speed;
     byte dir;
+    byte last_dir;
     byte phase;
-    
-    // Sprite bits
-    byte palette2;  // 4->16 color map index
-    byte bits;      // index of sprite bits
+
     signed char sy;
     
     void Init(const byte* s)
@@ -176,7 +176,8 @@ public:
         int n = phase >> 3;
         if (who == PACMAN)
         {
-            n = ((dir-1) << 2) | (n & 3);
+            uint8_t d = (dir == MStopped) ? last_dir : dir;
+            n = ((d-1) << 2) | (n & 3);
             return pgm_read_byte(_pacAnim + n);
         }
         
@@ -222,7 +223,11 @@ class Pacman : public Game
     
     // bool _inited;
     ushort _blocks;
-    
+
+    #define COLS 40
+    VRowTiles _rows[4];
+    uint8_t _buf[COLS*4];       // Could be trimmed down if need be
+
 public:
     byte GetTile(int cx, int cy)
     {
@@ -474,8 +479,11 @@ public:
             if (choice[1] != 0x7FFF && (j & LEFT)) return MLeft;
             if (choice[2] != 0x7FFF && (j & DOWN)) return MDown;
             if (choice[3] != 0x7FFF && (j & RIGHT)) return MRight;
-            if (choice[4-dir] == 0x7FFF)
+            if (choice[4-dir] == 0x7FFF) {
+                if (dir != MStopped)
+                    s->last_dir = dir;
                 return MStopped;
+            }
             return dir;
         }
         
@@ -679,6 +687,7 @@ public:
         _frightenedTimer = 0;
         _ai = 1;   // autoplay
         _lastjoy = 0;
+        memset(_buf,1,sizeof(_buf));
 
         const byte* s = _initSprites;
         for (int i = 0; i < 5; i++)
@@ -719,13 +728,16 @@ public:
             Sprite& s = _sprites[i];
             int n = s.SetupDraw(0,_frightenedTimer);
             const uint8_t* d = GET_SPRITE(n);
-            sprite_add(d,s._x>>1,s._y);
+            sprite_add(d,HTILEOFFSET*4 + (s._x>>1),s._y);
         }
     }
     
     //
     virtual uint8_t get_tile(uint8_t x, uint8_t y)
     {
+        if (x < HTILEOFFSET)
+            return 1;
+        x -= HTILEOFFSET;
        //     return ((x+y)& 1) + 1;
 
         int i = y*32+x;
@@ -741,22 +753,21 @@ public:
     }
     
 //  Draw playfield by inserting 1 row at a time.
-//  Rows are double buffered
+//  Rows are quad buffered
 
-#define ROWS 40
-    VRowTiles _rows[4];
-    uint8_t _buf[ROWS*4]; // can be 32*2 TODO
-    
     virtual void draw()
     {
+        // Wait for blanking
+        // Normally don't need to if stepping frame took long enough
+
         // Init tile line buffers
         for (uint8_t r = 0; r < 4; r++)
         {
-            VRowTiles* row = _rows + r; // 2 bufs
+            VRowTiles* row = _rows + r; // 4 bufs
             row->row.mode = VMODE_TILES;
             row->rom_font = _tiles;
             row->rom_font_count = sizeof(_tiles)/16;
-            row->tiles = _buf + r*ROWS;
+            row->tiles = _buf + r*COLS;
             row->v_scroll = 0;
         }
 
@@ -767,19 +778,20 @@ public:
             while (video_queue_count() == 4)
               ;
             row->row.y = (r << 3) + 7;
-            for (uint8_t x = 0; x < 32; x++)
+            for (uint8_t x = 0; x < 33; x++)
                 row->tiles[x] = get_tile(x,r);
+            row->tiles[33] = 0;
             
             // Patch special lines
             switch (r) {
                 case 0:
-                    for (uint8_t x = 0; x < 8; x++)
-                        row->tiles[x] = _scoreStr[x];    // SCORE
+                    for (uint8_t x = 3; x < 11; x++)
+                        row->tiles[x] = _scoreStr[x-3];   // SCORE
                     break;
                 case 13:
                     if (_state == ReadyState)
-                        for (uint8_t x = 13; x < 19; x++)
-                            row->tiles[x] = x + 58-13;   // READY
+                        for (uint8_t x = 16; x < 22; x++)
+                            row->tiles[x] = x + 58-16;   // READY
                     break;
             }
             row->ram_font = sprite_draw(row->tiles,r);  // Render sprites for this row
