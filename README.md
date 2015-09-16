@@ -3,7 +3,9 @@ Play retro color 8 bit games on your TV from an Arduino.
 
 <img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/title.jpg" width="100%"/>
 
-**Arduinocade** is capable of lots of old school color 8 bit graphics (tiles, sprites, smooth scrolling, simple 3D) and sound (4 voice wavetable synthesis). All video and audio signals are generated with three resistors, an upgraded crystal and a little software. By overclocking the Arduino to 28.6363Mhz we can directly manipulate ntsc to generate 27 simultaneous onscreen colors. An IR receiver supports a wide variety of keyboards, joysticks and remote controls.
+**Arduinocade** features old school color 8 bit graphics (tiles, sprites, smooth scrolling, simple 3D) and sound (4 voice wavetable synthesis). All video and audio signals are generated with three resistors, an upgraded crystal and a little software. By overclocking the Arduino to 28.6363Mhz we can directly manipulate NTSC to generate 27 simultaneous colors. An IR receiver supports a wide variety of keyboards, joysticks and remote controls.
+
+Video of Arduinocade in action at https://www.youtube.com/watch?v=nGIujZiEu_o
 
 ##Games
 These games are sketches of what is possible on the Arduinocade hardware and a far from the polished pieces that inspired them.
@@ -12,7 +14,7 @@ These games are sketches of what is possible on the Arduinocade hardware and a f
 A one-on-one sports style game inspired by the brilliant 1984 game Ballblazer. This uses a simple physics model and a 2D/3D rendering pipeline to produce 60fps animation. Try and grab the ball and shoot it into your opponent's goal.
 
 ###Pacman
-What can I say? waka waka.
+What can I say? pakku pakku pakku.
 
 ###Jowst
 Fly around on ostrich thingys. Poke each other with sticks. Nice example of using the sprite engine to generate lots of large multicolor sprites.
@@ -85,13 +87,13 @@ Copy the `Arduinocade` folder into the IDE libraries folder and relaunch IDE. Yo
 ##How it works
 
 ###Video
-Upgrading the crystal to 28.6363Mhz allows us to run at a multiple (8x CPU clock, 4x SPI output) of the ntsc subcarrier frequency. By spitting out bits in the right pattern at the right time we can generate ntsc colorburst and different colors based on the relative phase of the pattern.
+Upgrading the crystal to 28.6363Mhz allows us to run at a multiple (8x CPU clock, 4x SPI output) of the NTSC subcarrier frequency. By spitting out bits in the right pattern at the right time we can generate NTSC colorburst and different colors based on the relative phase of the pattern.
 
 Black (0000), White (1111), gray_5 (0101) and gray_10 (1010) don’t have a chroma component; the other 12 colors do. By inserting or skipping an extra nop in rendering kernel we can select between two different phases at the start of a line yielding 12+12+(black,white,gray) = 27 simultaneous colors on screen simultaneously. You can then add more by dithering etc.
 
 ###The Art of Artifacts
 <img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/art_of_artifacts.png" width="100%"/>
-*Left - Pixels being emitted from the TX port, Right - Colors as they appear on ntsc* 
+*Left - Pixels being emitted from the TX port, Right - Colors as they appear on NTSC* 
 
 Every HSYNC interrupt the cpu emits a 3.57Mhz colorburst signal then sends pixel data from carefully timed tile or RLE video kernels. These are tricky to maintain in C, as helpful compiler optimizations often alter timing in unexpected ways. They probably all need to move to asm at some point. See note above.
 
@@ -99,7 +101,7 @@ The higher layer code uses a RLE format (BallBlaster) or tiles to represent game
 
 <img src="https://raw.githubusercontent.com/rossumur/Arduinocade/master/sim/docs/tilegrind.png" width="100%"/>
 
-TileGrind is a primitive html/javascript tool for generating color tiles and sprites. It can load and save C structs and understands the nature of ntsc color phase / artifacting. Its limitations vividly recreate the frustration of early graphics editing tools.
+TileGrind is a primitive html/javascript tool for generating color tiles and sprites. It can load and save C structs and understands the nature of NTSC color phase / artifacting. Its limitations vividly recreate the frustration of early graphics editing tools.
 
 ###Audio
 The Audio driver has two parts.  The low level kernel runs every HSYNC, stepping each of the 4 voices though it’s wavetable, mixing the sampled voices together based on their current volume and emitting a sample to the PWM/resistor single bit DAC. This corresponds to a sample rate of 15734Hz.
