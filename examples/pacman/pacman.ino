@@ -102,7 +102,7 @@ const uint8_t _initSprites[] =
 #define DOT 17
 #define PILL 29
 
-#define HTILEOFFSET 3
+#define HTILEOFFSET 2
 
 // TODO PROGMEM
 
@@ -154,6 +154,7 @@ public:
         _x = lastx = (short)cx*8-4;
         _y = lasty = (short)cy*8;
         state = PenState;
+        phase = 0;
         speed = 0;
     }
     
@@ -176,11 +177,14 @@ public:
         int n = phase >> 3;
         if (who == PACMAN)
         {
+            if (state == DeadPacmanState)
+                return ((n>>2) & 0x3) + S_death_0;
+
             uint8_t d = (dir == MStopped) ? last_dir : dir;
             n = ((d-1) << 2) | (n & 3);
             return pgm_read_byte(_pacAnim + n);
         }
-        
+
         n &= 1;
         switch (state)
         {
@@ -207,6 +211,7 @@ class Pacman : public Game
     byte _counter;   // DB
     ushort _dots;
 
+    byte _lives;
     byte _ai;
     uint16_t _lastjoy;          // sticky last joystick
 
@@ -550,6 +555,16 @@ public:
                                 s->state = DeadEyesState;
                         }
                         break;
+
+                    case DeadPlayerState:
+                        if (_lives == 0)
+                            init();
+                        else {
+                            _sprites[PACMAN].state = RunState;
+                            NextPlayer();
+                        }
+                        return;
+
                     default:
                         ;
                 }
@@ -566,17 +581,21 @@ public:
             //  In DeadGhostState, only eyes move
             if (_state == DeadGhostState && s->state != DeadEyesState)
                 continue;
-            
+
             //  Calculate speed
             s->speed += GetSpeed(s);
             if (s->speed < 100)
                 continue;
             s->speed -= 100;
-            
+            s->phase++;
+
+            // In DeadPlayerState, no one moves
+            if (_state == DeadPlayerState)
+                continue;
+
             s->lastx = s->_x;
             s->lasty = s->_y;
-            s->phase++;
-            
+
             int x = s->_x;
             int y = s->_y;
             
@@ -622,8 +641,16 @@ public:
                     _frightenedCount++;
                     music_play(_got_ghost);
                 }
-                else
-                    ;               // pacman died
+                else {
+                    if ((s->state != DeadEyesState) && (_state != DeadPlayerState))
+                    {
+                        _state = DeadPlayerState;        // pause for 2
+                        _stateTimer = 1.5*FPS;
+                        _sprites[PACMAN].state = DeadPacmanState;
+                        _lives--;
+                        music_play(_death);         // pacman died
+                    }
+                }
             }
         }
     }
@@ -685,14 +712,12 @@ public:
     {
         _frightenedCount = 0;
         _frightenedTimer = 0;
-        _ai = 1;   // autoplay
+        _ai = 0;
         _lastjoy = 0;
+        _lives = 4;
         memset(_buf,1,sizeof(_buf));
 
-        const byte* s = _initSprites;
-        for (int i = 0; i < 5; i++)
-            _sprites[i].Init(s + i*5);
-        
+        InitSprites();
         _scIndex = 0;
         _scTimer = 1;
         
@@ -717,6 +742,20 @@ public:
         _state = ReadyState;
         _stateTimer = 5*FPS;
         music_play(_pacman_intro);
+    }
+
+    void InitSprites()
+    {
+        const byte* s = _initSprites;
+        for (int i = 0; i < 5; i++)
+            _sprites[i].Init(s + i*5);
+    }
+
+    void NextPlayer()
+    {
+        _state = ReadyState;
+        _stateTimer = 2*FPS;
+        InitSprites();
     }
     
     virtual void step()
@@ -778,21 +817,26 @@ public:
             while (video_queue_count() == 4)
               ;
             row->row.y = (r << 3) + 7;
-            for (uint8_t x = 0; x < 33; x++)
+            for (uint8_t x = 0; x < 32; x++)
                 row->tiles[x] = get_tile(x,r);
-            row->tiles[33] = 0;
+            row->tiles[32] = 0;
             
             // Patch special lines
             switch (r) {
                 case 0:
-                    for (uint8_t x = 3; x < 11; x++)
-                        row->tiles[x] = _scoreStr[x-3];   // SCORE
+                    for (uint8_t x = 2; x < 10; x++)
+                        row->tiles[x] = _scoreStr[x-2];   // SCORE
                     break;
                 case 13:
                     if (_state == ReadyState)
-                        for (uint8_t x = 16; x < 22; x++)
-                            row->tiles[x] = x + 58-16;   // READY
+                        for (uint8_t x = 15; x < 21; x++)
+                            row->tiles[x] = x + 58-15;   // READY
                     break;
+                case 23:
+                    for (uint8_t x = 0; x < 5; x++)
+                        row->tiles[x+3] = (x < _lives) ? 20:1;    // REMAINING LIVES
+                    break;
+
             }
             row->ram_font = sprite_draw(row->tiles,r);  // Render sprites for this row
             video_enqueue((VRow*)row);

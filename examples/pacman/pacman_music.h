@@ -135,7 +135,13 @@ const uint8_t _pacman_intro[] PROGMEM = {
     M_DELAY_5,
     M_NOTES_ON | 0x03,0x53,0x2f,
     M_DELAY_8,
+    M_NOTES_OFF | 0x07,
     M_END,
+};
+
+const uint8_t _sound_off[] PROGMEM = {
+    M_NOTES_OFF | 0x0F,
+    M_END
 };
 
 // Channel 3/2 sounds
@@ -182,6 +188,7 @@ const uint8_t _alarm[] PROGMEM = {
     M_VOLUME, CH3, 40,
     M_SLIDE, CH3, 256-2,
     M_DELAY_15,
+    M_NOTES_OFF | CH3,
     M_END
 };
 
@@ -192,6 +199,7 @@ const uint8_t _power[] PROGMEM = {
     M_NOTES_ON | CH3, 60,
     M_SLIDE, CH3, 6,
     M_DELAY_8,
+    M_NOTES_OFF | CH3,
     M_END
 };
 
@@ -230,6 +238,7 @@ const uint8_t _pellet[] PROGMEM = {
     M_NOTES_ON | CH4, 68, 	//
     M_SLIDE, CH4, 3,
     M_DELAY_5,
+    M_NOTES_OFF | CH4,
     M_END
 };
 
@@ -284,6 +293,7 @@ const uint8_t _death[] PROGMEM = {
     M_NOTES_ON | CH4, 58,
     M_SLIDE, CH3 | CH4, 4, 4,
     M_DELAY_10,
+    M_NOTES_OFF | CH3 | CH4,
     M_END
 };
 
@@ -319,7 +329,7 @@ const uint8_t _extra_man[] PROGMEM = {
     M_NOTES_ON | CH3, 66,
     M_NOTES_ON | CH4, 102,
     M_DELAY_12,
-
+    M_NOTES_OFF | CH3 | CH4,
     M_END
 };
 
